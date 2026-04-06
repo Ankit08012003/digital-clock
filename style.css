@@ -1,0 +1,14 @@
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: black;
+  color: #00ffcc;
+  font-family: monospace;
+}
+
+.clock {
+  font-size: 60px;
+}
