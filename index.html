@@ -2,14 +2,52 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Digital Clock</title>
+  <title>Time App</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="clock">
-    <h1 id="time">00:00:00</h1>
+  <h1 id="clock"></h1>
+
+  <!-- ALARM -->
+  <div class="section">
+    <h2>Alarm</h2>
+
+    <input type="time" id="alarmTime">
+    <button onclick="addAlarm()">Add Alarm</button>
+    <button onclick="clearAllAlarms()">Delete All</button>
+
+    <ul id="alarmList"></ul>
   </div>
+
+  <!-- STOPWATCH -->
+  <div class="section">
+    <h2>Stopwatch</h2>
+    <h3 id="stopwatch">00:00:00</h3>
+
+    <button onclick="startSW()">Start</button>
+    <button onclick="stopSW()">Stop</button>
+    <button onclick="resetSW()">Reset</button>
+    <button onclick="lap()">Lap</button>
+
+    <ul id="laps"></ul>
+  </div>
+
+  <!-- TIMER -->
+  <div class="section">
+    <h2>Timer</h2>
+
+    <input type="number" id="timerInput" placeholder="Seconds">
+    <button onclick="startTimer()">Start</button>
+
+    <div class="circle">
+      <span id="timerText">0</span>
+    </div>
+  </div>
+
+  <audio id="alarmSound"
+    src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3">
+  </audio>
 
   <script src="script.js"></script>
 </body>
