@@ -7,8 +7,30 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
+
+// ================= AUDIO UNLOCK (IMPORTANT) =================
+let audioUnlocked = false;
+
+// Trigger unlock only once on the first interaction
+document.body.addEventListener("click", () => {
+  if (!audioUnlocked) {
+    const audio = document.getElementById("alarmSound");
+
+    audio.play().then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+      audioUnlocked = true;
+      console.log("Audio unlocked ✅");
+    }).catch((e) => {
+      console.log("Audio unlock pending... ⏳", e);
+    });
+  }
+}, { once: true });
+
+
 // ================= ALARM =================
 let alarms = JSON.parse(localStorage.getItem("alarms")) || [];
+let ringing = false;
 
 function saveAlarms() {
   localStorage.setItem("alarms", JSON.stringify(alarms));
@@ -20,11 +42,11 @@ function renderAlarms() {
 
   alarms.forEach((alarm, index) => {
     const li = document.createElement("li");
-    li.textContent = alarm.time;
+    li.textContent = alarm.time + " ";
 
-    // delete button
     const delBtn = document.createElement("button");
     delBtn.textContent = "Delete";
+
     delBtn.onclick = () => {
       alarms.splice(index, 1);
       saveAlarms();
@@ -39,10 +61,7 @@ function renderAlarms() {
 function addAlarm() {
   const time = document.getElementById("alarmTime").value;
 
-  if (!time) {
-    alert("Select time first");
-    return;
-  }
+  if (!time) return alert("Select time");
 
   alarms.push({
     time: time,
@@ -59,7 +78,8 @@ function clearAllAlarms() {
   renderAlarms();
 }
 
-// check alarms
+
+// ================= ALARM CHECK =================
 setInterval(() => {
   const now = new Date();
 
@@ -68,16 +88,48 @@ setInterval(() => {
     now.getMinutes().toString().padStart(2, "0");
 
   alarms.forEach(alarm => {
-    if (alarm.time === currentTime && !alarm.triggered) {
-      document.getElementById("alarmSound").play();
+
+    if (
+      alarm.time === currentTime &&
+      !alarm.triggered &&
+      !ringing
+    ) {
+      const audio = document.getElementById("alarmSound");
+
+      audio.loop = true;
+
+      audio.play().then(() => {
+        console.log("Alarm Ringing! 🔔");
+      }).catch(() => {
+        console.log("Click required for sound ");
+        // Fallback alert if browser blocks audio
+        alert("Alarm is ringing! (Browser blocked the sound)"); 
+      });
+
       alarm.triggered = true;
+      ringing = true;
+
+      document.getElementById("stopAlarmBtn").style.display = "inline-block";
     }
   });
 
   saveAlarms();
 }, 1000);
 
-renderAlarms();
+
+// ================= STOP ALARM =================
+function stopAlarm() {
+  const audio = document.getElementById("alarmSound");
+
+  audio.pause();
+  audio.currentTime = 0;
+  audio.loop = false;
+
+  ringing = false;
+
+  document.getElementById("stopAlarmBtn").style.display = "none";
+}
+
 
 // ================= STOPWATCH =================
 let sw = 0, swInterval;
@@ -120,6 +172,7 @@ function lap() {
   document.getElementById("laps").appendChild(li);
 }
 
+
 // ================= TIMER =================
 let timerInterval;
 
@@ -140,3 +193,6 @@ function startTimer() {
     time--;
   }, 1000);
 }
+
+// INIT
+renderAlarms();
