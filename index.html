@@ -1,54 +1,198 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Time App</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+// ================= CLOCK =================
+function updateClock() {
+  const now = new Date();
+  document.getElementById("clock").textContent =
+    now.toLocaleTimeString();
+}
+setInterval(updateClock, 1000);
+updateClock();
 
-  <h1 id="clock"></h1>
 
-  <!-- ALARM -->
-  <div class="section">
-    <h2>Alarm</h2>
+// ================= AUDIO UNLOCK (IMPORTANT) =================
+let audioUnlocked = false;
 
-    <input type="time" id="alarmTime">
-    <button onclick="addAlarm()">Add Alarm</button>
-    <button onclick="clearAllAlarms()">Delete All</button>
+// Trigger unlock only once on the first interaction
+document.body.addEventListener("click", () => {
+  if (!audioUnlocked) {
+    const audio = document.getElementById("alarmSound");
 
-    <ul id="alarmList"></ul>
-  </div>
+    audio.play().then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+      audioUnlocked = true;
+      console.log("Audio unlocked ✅");
+    }).catch((e) => {
+      console.log("Audio unlock pending... ⏳", e);
+    });
+  }
+}, { once: true });
 
-  <!-- STOPWATCH -->
-  <div class="section">
-    <h2>Stopwatch</h2>
-    <h3 id="stopwatch">00:00:00</h3>
 
-    <button onclick="startSW()">Start</button>
-    <button onclick="stopSW()">Stop</button>
-    <button onclick="resetSW()">Reset</button>
-    <button onclick="lap()">Lap</button>
+// ================= ALARM =================
+let alarms = JSON.parse(localStorage.getItem("alarms")) || [];
+let ringing = false;
 
-    <ul id="laps"></ul>
-  </div>
+function saveAlarms() {
+  localStorage.setItem("alarms", JSON.stringify(alarms));
+}
 
-  <!-- TIMER -->
-  <div class="section">
-    <h2>Timer</h2>
+function renderAlarms() {
+  const list = document.getElementById("alarmList");
+  list.innerHTML = "";
 
-    <input type="number" id="timerInput" placeholder="Seconds">
-    <button onclick="startTimer()">Start</button>
+  alarms.forEach((alarm, index) => {
+    const li = document.createElement("li");
+    li.textContent = alarm.time + " ";
 
-    <div class="circle">
-      <span id="timerText">0</span>
-    </div>
-  </div>
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Delete";
 
-  <audio id="alarmSound"
-    src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3">
-  </audio>
+    delBtn.onclick = () => {
+      alarms.splice(index, 1);
+      saveAlarms();
+      renderAlarms();
+    };
 
-  <script src="script.js"></script>
-</body>
-</html>
+    li.appendChild(delBtn);
+    list.appendChild(li);
+  });
+}
+
+function addAlarm() {
+  const time = document.getElementById("alarmTime").value;
+
+  if (!time) return alert("Select time");
+
+  alarms.push({
+    time: time,
+    triggered: false
+  });
+
+  saveAlarms();
+  renderAlarms();
+}
+
+function clearAllAlarms() {
+  alarms = [];
+  saveAlarms();
+  renderAlarms();
+}
+
+
+// ================= ALARM CHECK =================
+setInterval(() => {
+  const now = new Date();
+
+  const currentTime =
+    now.getHours().toString().padStart(2, "0") + ":" +
+    now.getMinutes().toString().padStart(2, "0");
+
+  alarms.forEach(alarm => {
+
+    if (
+      alarm.time === currentTime &&
+      !alarm.triggered &&
+      !ringing
+    ) {
+      const audio = document.getElementById("alarmSound");
+
+      audio.loop = true;
+
+      audio.play().then(() => {
+        console.log("Alarm Ringing! 🔔");
+      }).catch(() => {
+        console.log("Click required for sound ");
+        // Fallback alert if browser blocks audio
+        alert("Alarm is ringing! (Browser blocked the sound)"); 
+      });
+
+      alarm.triggered = true;
+      ringing = true;
+
+      document.getElementById("stopAlarmBtn").style.display = "inline-block";
+    }
+  });
+
+  saveAlarms();
+}, 1000);
+
+
+// ================= STOP ALARM =================
+function stopAlarm() {
+  const audio = document.getElementById("alarmSound");
+
+  audio.pause();
+  audio.currentTime = 0;
+  audio.loop = false;
+
+  ringing = false;
+
+  document.getElementById("stopAlarmBtn").style.display = "none";
+}
+
+
+// ================= STOPWATCH =================
+let sw = 0, swInterval;
+
+function startSW() {
+  if (swInterval) return;
+
+  swInterval = setInterval(() => {
+    sw++;
+    displaySW();
+  }, 1000);
+}
+
+function stopSW() {
+  clearInterval(swInterval);
+  swInterval = null;
+}
+
+function resetSW() {
+  stopSW();
+  sw = 0;
+  document.getElementById("laps").innerHTML = "";
+  displaySW();
+}
+
+function displaySW() {
+  let h = String(Math.floor(sw / 3600)).padStart(2, "0");
+  let m = String(Math.floor((sw % 3600) / 60)).padStart(2, "0");
+  let s = String(sw % 60).padStart(2, "0");
+
+  document.getElementById("stopwatch").textContent =
+    `${h}:${m}:${s}`;
+}
+
+function lap() {
+  const li = document.createElement("li");
+  li.textContent =
+    document.getElementById("stopwatch").textContent;
+
+  document.getElementById("laps").appendChild(li);
+}
+
+
+// ================= TIMER =================
+let timerInterval;
+
+function startTimer() {
+  let time = parseInt(document.getElementById("timerInput").value);
+  const display = document.getElementById("timerText");
+
+  clearInterval(timerInterval);
+
+  timerInterval = setInterval(() => {
+    if (time <= -1) {
+      clearInterval(timerInterval);
+      alert("Time's up!");
+      return;
+    }
+
+    display.textContent = time;
+    time--;
+  }, 1000);
+}
+
+// INIT
+renderAlarms();
